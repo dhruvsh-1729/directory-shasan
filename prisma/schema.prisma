@@ -1,0 +1,176 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Contact {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  status          String?
+  address         String?
+  suburb          String?
+  city            String?
+  pincode         String?
+  state           String?
+  country         String?
+  category        String?
+  officeAddress   String?
+  address2        String?
+  isMainContact   Boolean  @default(true)
+  parentContactId String?  @db.ObjectId
+  duplicateGroup  String?
+  alternateNames  String[]
+  tags            String[]
+  notes           String?
+
+  // Embedded phone numbers
+  phones Phone[]
+
+  // Embedded email addresses
+  emails Email[]
+
+  // Relationships (as the main contact)
+  relationshipsAsMain ContactRelationship[] @relation("MainContact")
+
+  // Relationships (as the related contact)
+  relationshipsAsRelated ContactRelationship[] @relation("RelatedContact")
+
+  // Parent contact reference
+  parentContact Contact? @relation("ContactHierarchy", fields: [parentContactId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  // Child contacts
+  childContacts Contact[] @relation("ContactHierarchy")
+
+  // Timestamps
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lastUpdated DateTime?
+
+  // Indexing for better performance
+  @@index([name])
+  @@index([city, state])
+  @@index([category])
+  @@index([isMainContact])
+  @@index([duplicateGroup])
+  @@index([parentContactId])
+  @@map("contacts")
+}
+
+// Embedded phone number type
+type Phone {
+  id        String
+  number    String
+  type      PhoneType
+  isPrimary Boolean   @default(false)
+  label     String?
+  country   String?
+  region    String?
+  isValid   Boolean?
+}
+
+// Embedded email type
+type Email {
+  id        String
+  address   String
+  isPrimary Boolean  @default(false)
+  isValid   Boolean?
+}
+
+model ContactRelationship {
+  id               String           @id @default(auto()) @map("_id") @db.ObjectId
+  contactId        String           @db.ObjectId
+  relatedContactId String           @db.ObjectId
+  relationshipType RelationshipType
+  description      String?
+
+  // Relations
+  contact        Contact @relation("MainContact", fields: [contactId], references: [id], onDelete: Cascade)
+  relatedContact Contact @relation("RelatedContact", fields: [relatedContactId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([contactId, relatedContactId])
+  @@map("contact_relationships")
+}
+
+model ImportSession {
+  id                     String       @id @default(auto()) @map("_id") @db.ObjectId
+  fileName               String
+  fileSize               Int
+  totalRows              Int
+  processedRows          Int
+  successfulRows         Int
+  failedRows             Int
+  contactsCreated        Int
+  relatedContactsCreated Int
+  duplicatesFound        Int
+  status                 ImportStatus
+  startedAt              DateTime     @default(now())
+  completedAt            DateTime?
+  errorMessage           String?
+
+  // Statistics
+  statistics ImportStatistics?
+
+  @@map("import_sessions")
+}
+
+// Embedded import statistics
+type ImportStatistics {
+  totalContacts      Int
+  mainContacts       Int
+  relatedContacts    Int
+  totalPhones        Int
+  validPhones        Int
+  invalidPhones      Int
+  totalEmails        Int
+  validEmails        Int
+  invalidEmails      Int
+  duplicateGroups    Int
+  relationshipsFound Int
+}
+
+// Enums
+enum PhoneType {
+  mobile
+  office
+  residence
+  fax
+  other
+}
+
+enum RelationshipType {
+  child
+  spouse
+  parent
+  friend
+  colleague
+  assistant
+  sibling
+  extended_family
+  grandparent
+  grandchild
+  in_law
+  supervisor
+  subordinate
+  business_partner
+  client
+  neighbor
+  related
+}
+
+enum ImportStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
