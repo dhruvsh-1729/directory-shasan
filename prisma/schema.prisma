@@ -1,5 +1,4 @@
 // prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -28,117 +27,56 @@ model Contact {
   alternateNames  String[]
   tags            String[]
   notes           String?
+  lastUpdated     DateTime @default(now())
+  createdAt       DateTime @default(now())
 
-  // Embedded phone numbers
-  phones Phone[]
+  // Embedded documents
+  phones        Phone[]
+  emails        Email[]
+  relationships ContactRelationship[]
 
-  // Embedded email addresses
-  emails Email[]
-
-  // Relationships (as the main contact)
-  relationshipsAsMain ContactRelationship[] @relation("MainContact")
-
-  // Relationships (as the related contact)
-  relationshipsAsRelated ContactRelationship[] @relation("RelatedContact")
-
-  // Parent contact reference
-  parentContact Contact? @relation("ContactHierarchy", fields: [parentContactId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  // Child contacts
+  // Relations
+  parentContact Contact?  @relation("ContactHierarchy", fields: [parentContactId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   childContacts Contact[] @relation("ContactHierarchy")
 
-  // Timestamps
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  lastUpdated DateTime?
-
-  // Indexing for better performance
+  // Indexes for better query performance
   @@index([name])
+  @@index([isMainContact])
   @@index([city, state])
   @@index([category])
-  @@index([isMainContact])
   @@index([duplicateGroup])
   @@index([parentContactId])
+  @@index([createdAt])
+  @@index([lastUpdated])
   @@map("contacts")
 }
 
-// Embedded phone number type
 type Phone {
   id        String
   number    String
   type      PhoneType
-  isPrimary Boolean   @default(false)
+  isPrimary Boolean
   label     String?
   country   String?
   region    String?
   isValid   Boolean?
 }
 
-// Embedded email type
 type Email {
   id        String
   address   String
-  isPrimary Boolean  @default(false)
+  isPrimary Boolean
   isValid   Boolean?
 }
 
-model ContactRelationship {
-  id               String           @id @default(auto()) @map("_id") @db.ObjectId
-  contactId        String           @db.ObjectId
-  relatedContactId String           @db.ObjectId
+type ContactRelationship {
+  id               String
+  contactId        String
+  relatedContactId String
   relationshipType RelationshipType
   description      String?
-
-  // Relations
-  contact        Contact @relation("MainContact", fields: [contactId], references: [id], onDelete: Cascade)
-  relatedContact Contact @relation("RelatedContact", fields: [relatedContactId], references: [id], onDelete: Cascade)
-
-  // Timestamps
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([contactId, relatedContactId])
-  @@map("contact_relationships")
 }
 
-model ImportSession {
-  id                     String       @id @default(auto()) @map("_id") @db.ObjectId
-  fileName               String
-  fileSize               Int
-  totalRows              Int
-  processedRows          Int
-  successfulRows         Int
-  failedRows             Int
-  contactsCreated        Int
-  relatedContactsCreated Int
-  duplicatesFound        Int
-  status                 ImportStatus
-  startedAt              DateTime     @default(now())
-  completedAt            DateTime?
-  errorMessage           String?
-
-  // Statistics
-  statistics ImportStatistics?
-
-  @@map("import_sessions")
-}
-
-// Embedded import statistics
-type ImportStatistics {
-  totalContacts      Int
-  mainContacts       Int
-  relatedContacts    Int
-  totalPhones        Int
-  validPhones        Int
-  invalidPhones      Int
-  totalEmails        Int
-  validEmails        Int
-  invalidEmails      Int
-  duplicateGroups    Int
-  relationshipsFound Int
-}
-
-// Enums
 enum PhoneType {
   mobile
   office
@@ -148,23 +86,40 @@ enum PhoneType {
 }
 
 enum RelationshipType {
-  child
   spouse
+  child
   parent
-  friend
-  colleague
-  assistant
   sibling
   extended_family
   grandparent
   grandchild
   in_law
+  colleague
+  assistant
   supervisor
   subordinate
   business_partner
   client
+  friend
   neighbor
   related
+}
+
+// Import tracking model
+model ImportSession {
+  id               String       @id @default(auto()) @map("_id") @db.ObjectId
+  fileName         String
+  fileSize         Int
+  status           ImportStatus
+  totalRecords     Int?
+  processedRecords Int?
+  errorRecords     Int?
+  errors           String[]
+  statistics       Json?
+  startedAt        DateTime     @default(now())
+  completedAt      DateTime?
+
+  @@map("import_sessions")
 }
 
 enum ImportStatus {
@@ -172,5 +127,16 @@ enum ImportStatus {
   PROCESSING
   COMPLETED
   FAILED
-  CANCELLED
+}
+
+// Cache model for performance
+model CacheEntry {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  key       String   @unique
+  value     Json
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
+  @@map("cache_entries")
 }
