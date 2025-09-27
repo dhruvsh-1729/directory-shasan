@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
 
 // Configuration
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
-const INPUT_FILE = path.join(__dirname, 'contacts.xlsx'); // Place your Excel file here
+const INPUT_FILE = path.join(__dirname, 'directory.csv'); // Place your Excel file here
 const BATCH_SIZE = 100;
 
 // Excel column mapping
