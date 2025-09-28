@@ -70,6 +70,8 @@ export interface Contact {
   tags?: string[];
   notes?: string;
   lastUpdated?: Date;
+  parentContact?: Contact; // For hierarchical display
+  childContacts?: Contact[]; // For hierarchical display
 }
 
 // New: Interface for validation results
