@@ -1,6 +1,7 @@
 // pages/api/contacts/[id].ts
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient, Prisma } from '@prisma/client';
+import { ContactDatabaseService } from '@/lib/database';
 
 const prisma = new PrismaClient();
 
@@ -119,6 +120,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       return res.status(200).json({ contact: updated, parentContact: parentUpdated });
+    }
+
+    if (req.method === 'DELETE') {
+      await ContactDatabaseService.deleteContact(id);
+      return res.status(204).end();
     }
 
     return res.status(405).json({ message: 'Method not allowed' });

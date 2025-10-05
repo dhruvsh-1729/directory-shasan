@@ -813,6 +813,50 @@ private static mapContactShallow(prismaContact: PrismaContact): Contact {
       return false;
     }
   }
+
+  /**
+ * Returns contacts where the *same contact* has duplicate phone numbers
+ * (after normalization). Includes which numbers are duplicated and counts.
+ */
+  static async getContactsWithInternalDuplicatePhones(): Promise<
+    { contactId: string; name: string; duplicates: { number: string; count: number }[] }[]
+  > {
+    // Only fetch the fields we need
+    const contacts = await prisma.contact.findMany({
+      select: { id: true, name: true, phones: true },
+    });
+
+    const result: { contactId: string; name: string; duplicates: { number: string; count: number }[] }[] = [];
+
+    for (const c of contacts) {
+      const freq = new Map<string, number>();
+
+      (c.phones || []).forEach((p) => {
+        const norm = this.normalizePhoneNumber(p.number);
+        if (!norm) return;
+        freq.set(norm, (freq.get(norm) || 0) + 1);
+      });
+
+      const duplicates = Array.from(freq.entries())
+        .filter(([, count]) => count > 1)
+        .map(([number, count]) => ({ number, count }));
+
+      if (duplicates.length > 0) {
+        result.push({ contactId: c.id, name: c.name, duplicates });
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Convenience function: just returns the count of contacts that
+   * have any duplicated phone number internally.
+   */
+  static async countContactsWithInternalDuplicatePhones(): Promise<number> {
+    const dupList = await this.getContactsWithInternalDuplicatePhones();
+    return dupList.length;
+  }
   
   // Enhanced statistics with validation data and caching
   static async getStats(): Promise<DatabaseStats> {
@@ -833,7 +877,9 @@ private static mapContactShallow(prismaContact: PrismaContact): Contact {
         categories,
         locations,
         duplicateGroups,
-        allContacts // For phone/email validation stats
+        allContacts, // For phone/email validation stats
+        internalDuplicatePhoneContacts, // Add internal duplicate phone count
+        crossContactDuplicatePhones // Add cross-contact duplicate phone groups
       ] = await Promise.all([
         prisma.contact.count().catch(() => 0),
         prisma.contact.count({ where: { isMainContact: true } }).catch(() => 0),
@@ -871,7 +917,9 @@ private static mapContactShallow(prismaContact: PrismaContact): Contact {
         }).catch(() => []),
         prisma.contact.findMany({
           select: { phones: true, emails: true }
-        }).catch(() => [])
+        }).catch(() => []),
+        this.countContactsWithInternalDuplicatePhones().catch(() => 0), // Count contacts with internal duplicate phones
+        this.getContactsWithDuplicatePhones().catch(() => []) // Cross-contact duplicate phone groups
       ]);
       
       // Calculate phone and email statistics
@@ -908,13 +956,16 @@ private static mapContactShallow(prismaContact: PrismaContact): Contact {
         }
       });
       
+      // Calculate total duplicate phone groups (cross-contact + internal)
+      const totalDuplicatePhoneGroups = crossContactDuplicatePhones.length + internalDuplicatePhoneContacts;
+      
       const stats: DatabaseStats = {
         totalContacts,
         mainContacts,
         relatedContacts,
         totalPhones,
         totalEmails,
-        duplicateGroups: duplicateGroups.length,
+        duplicateGroups: duplicateGroups.length + totalDuplicatePhoneGroups, // Include phone duplicates in total
         recentImports,
         categoryCounts: categories.reduce((acc, cat) => {
           if (cat.category) {
