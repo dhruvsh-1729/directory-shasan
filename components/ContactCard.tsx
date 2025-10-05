@@ -6,6 +6,7 @@ import {
   AlertTriangle, CheckCircle, Globe, Building, Home, Trash2,
   Edit3, Eye, Copy, ExternalLink, Star
 } from 'lucide-react';
+import ContactAvatar from './ContactAvatar';
 
 interface ContactCardProps {
   contact: Contact;
@@ -83,12 +84,15 @@ const ContactCard: React.FC<ContactCardProps> = ({
         <div className="flex items-center justify-between">
           {/* Avatar and Name Section */}
           <div className="flex items-center min-w-0 flex-1 mr-4">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm ${
+            <div className="relative">
+              <ContactAvatar contact={contact} size={72} />
+              <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center ${
               contact.isMainContact 
-                ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' 
-                : 'bg-gradient-to-r from-green-500 to-green-600 text-white'
-            }`}>
-              {contact.isMainContact ? <User className="h-5 w-5" /> : <Users className="h-5 w-5" />}
+              ? 'bg-blue-500 text-white' 
+              : 'bg-green-500 text-white'
+              }`}>
+              {contact.isMainContact ? <User className="h-3 w-3" /> : <Users className="h-3 w-3" />}
+              </div>
             </div>
             <div className="ml-3 min-w-0 flex-1">
               <div className="flex items-center">

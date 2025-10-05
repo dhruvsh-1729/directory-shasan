@@ -7,25 +7,31 @@ import {
   Tag, FileText, Activity, TrendingUp, Shield, Loader2
 } from 'lucide-react';
 import EditContactModal from './EditContactModal';
+import ContactAvatar from './ContactAvatar';
+import { uploadAvatarFile } from '@/utils/uploadAvatar';
+import { Image as ImageIcon, Trash2 } from 'lucide-react';
 
 interface ContactDetailModalProps {
   contact: Contact;
   onClose: () => void;
   allContacts: Contact[];
+  onContactSaved?: (updated: Contact, parent?: Contact | null) => void; // <-- add
 }
 
 const ContactDetailModal: React.FC<ContactDetailModalProps> = ({ 
   contact, 
   onClose, 
-  allContacts 
+  allContacts,
+  onContactSaved 
 }) => {
   const [relatedContacts, setRelatedContacts] = useState<Contact[]>([]);
   const [parentContactData, setParentContactData] = useState<Contact | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
   // 2) ADD THIS STATE near your other useState hooks
-const [editing, setEditing] = useState(false);
-const [currentContact, setCurrentContact] = useState<Contact>(contact);
+  const [editing, setEditing] = useState(false);
+  const [currentContact, setCurrentContact] = useState<Contact>(contact);
+  const [avatarBusy, setAvatarBusy] = useState(false);
 
   console.log({ contact, parentContactData });  
 
@@ -120,13 +126,13 @@ const [currentContact, setCurrentContact] = useState<Contact>(contact);
     return tagMappings[tag as keyof typeof tagMappings] || tag;
   };
 
-  // AFTER
-const validPhones = currentContact.phones.filter(p => p.isValid !== false);
-const validEmails = currentContact.emails.filter(e => e.isValid !== false);
-// ...
-const displayAddress = currentContact.address || parentContactData?.address;
-const displayCity = currentContact.city || parentContactData?.city;
-// etc...
+    // AFTER
+  const validPhones = currentContact.phones.filter(p => p.isValid !== false);
+  const validEmails = currentContact.emails.filter(e => e.isValid !== false);
+  // ...
+  const displayAddress = currentContact.address || parentContactData?.address;
+  const displayCity = currentContact.city || parentContactData?.city;
+  // etc...
 
   const qualityScore = Math.round(
     ((validPhones.length / Math.max(contact.phones.length, 1)) * 0.4 +
@@ -139,6 +145,54 @@ const displayCity = currentContact.city || parentContactData?.city;
   const displayPincode = contact.pincode || parentContactData?.pincode;
   const displaySuburb = contact.suburb || parentContactData?.suburb;
 
+  const updateAvatarOnServer = async (id: string, payload: { url: string; publicId: string }) => {
+    const res = await fetch(`/api/contacts/${id}/avatar`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('Failed to save avatar');
+    const json = await res.json();
+    return json.contact as Contact;
+  };
+
+  const removeAvatarOnServer = async (id: string) => {
+    const res = await fetch(`/api/contacts/${id}/avatar`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to delete avatar');
+    const json = await res.json();
+    return json.contact as Contact;
+  };
+
+  const onPickAvatar = async (file: File) => {
+    setAvatarBusy(true);
+    try {
+      const { url, publicId } = await uploadAvatarFile(file);
+      // optimistic UI
+      setCurrentContact(prev => ({ ...prev, avatarUrl: url, avatarPublicId: publicId }));
+      const saved = await updateAvatarOnServer(currentContact.id, { url, publicId });
+      setCurrentContact(saved);
+    } catch (e: any) {
+      setError(e.message || 'Avatar upload failed');
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
+
+  const onRemoveAvatar = async () => {
+    if (!confirm('Remove this avatar?')) return;
+    setAvatarBusy(true);
+    try {
+      // optimistic
+      setCurrentContact(prev => ({ ...prev, avatarUrl: null, avatarPublicId: null } as any));
+      const saved = await removeAvatarOnServer(currentContact.id);
+      setCurrentContact(saved);
+    } catch (e: any) {
+      setError(e.message || 'Avatar removal failed');
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
+
   return (
     <div 
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
@@ -149,17 +203,30 @@ const displayCity = currentContact.city || parentContactData?.city;
         <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-2xl p-6 z-10">
           <div className="flex items-center justify-between">
             <div className="flex-1">
-              <div className="flex items-center space-x-4">
-                <div className={`w-16 h-16 rounded-full flex items-center justify-center shadow-lg ${
-                  contact.isMainContact 
-                    ? 'bg-white/20 backdrop-blur-sm' 
-                    : 'bg-green-500/80 backdrop-blur-sm'
-                }`}>
-                  {contact.isMainContact ? 
-                    <User className="h-8 w-8 text-white" /> : 
-                    <Users className="h-8 w-8 text-white" />
-                  }
+                <div className="flex items-center space-x-4">
+                {/* === AVATAR UPLOAD SECTION === */}
+                <div className="relative">
+                  <ContactAvatar contact={currentContact} size={128} />
+
+                  {/* Upload icon overlay */}
+                  <label className="absolute -bottom-2 -right-2 cursor-pointer">
+                  <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={avatarBusy}
+                  onChange={e => {
+                  const f = e.target.files?.[0];
+                  if (f) onPickAvatar(f);
+                  e.currentTarget.value = ''; // reset input
+                  }}
+                  />
+                  <div className="p-3 rounded-full bg-white/90 hover:bg-white shadow-lg">
+                  <ImageIcon className={`h-5 w-5 text-gray-700 ${avatarBusy ? 'opacity-50' : ''}`} />
+                  </div>
+                  </label>
                 </div>
+                {/* === END AVATAR UPLOAD SECTION === */}
                 <div className="flex-1 min-w-0">
                   <h2 className="text-2xl font-bold text-white mb-1">{contact.name}</h2>
                   {contact.alternateNames && contact.alternateNames.length > 0 && (
@@ -762,6 +829,14 @@ const displayCity = currentContact.city || parentContactData?.city;
             <Edit3 className="h-4 w-4 mr-2" />
             Edit Contact
             </button>
+            <button
+              onClick={onRemoveAvatar}
+              disabled={avatarBusy || !currentContact.avatarUrl}
+              className="px-6 py-3 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors font-medium flex items-center text-gray-700"
+            >
+              <Trash2 className="h-4 w-4 mr-2 text-gray-500" />
+              Remove Avatar
+            </button>
 
             </div>
           </div>
@@ -769,20 +844,25 @@ const displayCity = currentContact.city || parentContactData?.city;
       </div>
         {editing && (
         <EditContactModal
-        contact={currentContact}
-        parentContact={parentContactData || null}
-        onCancel={() => setEditing(false)}
-        onSaved={({ contact: updated, parentContact }) => {
-          setCurrentContact(updated);
-          if (parentContact) setParentContactData(parentContact);
-          // Rebuild related if parent/child flags changed:
-          const related = allContacts.filter(c =>
-            c.parentContactId === updated.id ||
-            (updated.parentContactId && c.parentContactId === updated.parentContactId && c.id !== updated.id)
-          );
-          setRelatedContacts(related);
-          setEditing(false);
-        }}
+          contact={currentContact}
+          parentContact={parentContactData || null}
+          onCancel={() => setEditing(false)}
+          onSaved={({ contact: updated, parentContact }) => {
+            setCurrentContact(updated);
+            if (parentContact) setParentContactData(parentContact);
+
+            // Rebuild related list locally
+            const related = allContacts.filter(c =>
+              c.parentContactId === updated.id ||
+              (updated.parentContactId && c.parentContactId === updated.parentContactId && c.id !== updated.id)
+            );
+            setRelatedContacts(related);
+
+            // ⬇️ bubble to parent so EVERYWHERE gets the fresh contact(s)
+            onContactSaved?.(updated, parentContact || null);
+
+            setEditing(false);
+          }}
         />
         )}
     </div>

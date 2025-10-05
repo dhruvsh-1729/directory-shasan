@@ -69,6 +69,8 @@ export interface Contact {
   alternateNames?: string[]; // Store original relationship names as alternates
   tags?: string[];
   notes?: string;
+  avatarUrl?: string | null;
+  avatarPublicId?: string | null;
   lastUpdated?: Date;
   parentContact?: Contact; // For hierarchical display
   childContacts?: Contact[]; // For hierarchical display

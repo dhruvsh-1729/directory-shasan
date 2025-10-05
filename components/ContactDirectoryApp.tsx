@@ -212,9 +212,7 @@ const ContactDirectoryApp: React.FC = () => {
 
   // Reset to first page when filters change
   useEffect(() => {
-    if (currentPage !== 1) {
-      setCurrentPage(1);
-    }
+    setCurrentPage(prev => prev !== 1 ? 1 : prev);
   }, [debouncedSearchTerm, selectedFilter, advancedFilters]);
 
   // File upload handler with better progress tracking
@@ -510,6 +508,59 @@ const ContactDirectoryApp: React.FC = () => {
     } finally {
       setExportLoading(false);
     }
+  };
+
+    // ContactDirectoryApp.tsx (inside component)
+  const mergeInherited = (child: Contact, parent?: Contact | null): Contact => {
+    if (!parent || child.isMainContact) return child;
+    return {
+      ...child,
+      address: child.address || parent.address || child.address,
+      city: child.city || parent.city || child.city,
+      state: child.state || parent.state || child.state,
+      country: child.country || parent.country || child.country,
+      pincode: child.pincode || parent.pincode || child.pincode,
+      suburb: child.suburb || parent.suburb || child.suburb,
+      parentContact: parent ?? child.parentContact,
+    };
+  };
+
+  const handleContactSaved = (updated: Contact, parent?: Contact | null) => {
+    setContacts(prev => {
+      // 1) Upsert updated contact (with inherited address if needed)
+      const updatedWithInheritance = mergeInherited(updated, parent ?? (prev.find(c => c.id === updated.parentContactId) || null));
+      let next = prev.map(c => (c.id === updated.id ? updatedWithInheritance : c));
+
+      // 2) If parent was returned, upsert it too
+      if (parent) {
+        next = next.map(c => (c.id === parent.id ? parent : c));
+      }
+
+      // 3) If updated contact became/ceased to be a child, ensure siblings inherit correctly
+      if (updatedWithInheritance.parentContactId) {
+        const parentObj = parent || next.find(c => c.id === updatedWithInheritance.parentContactId) || null;
+        if (parentObj) {
+          next = next.map(c =>
+            c.parentContactId === updatedWithInheritance.parentContactId
+              ? mergeInherited(c, parentObj)
+              : c
+          );
+        }
+      }
+
+      return next;
+    });
+
+    // 4) Keep the open modal in sync (if the edited item is currently selected)
+    setSelectedContact(sel => {
+      if (!sel) return sel;
+      if (sel.id === updated.id) return mergeInherited(updated, parent || (contacts.find(c => c.id === updated.parentContactId) || null));
+      if (parent && sel.id === parent.id) return parent;
+      return sel;
+    });
+
+    // (Optional) If you want the header stats to reflect changes immediately, you can re-count or just call:
+    // loadDatabaseStats();
   };
 
   return (
@@ -1040,8 +1091,9 @@ const ContactDirectoryApp: React.FC = () => {
         contact={selectedContact}
         onClose={() => setSelectedContact(null)}
         allContacts={contacts}
+        onContactSaved={handleContactSaved}   // <-- add this
       />
-      )}
+      )}    
 
       {showExport && (
       <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">

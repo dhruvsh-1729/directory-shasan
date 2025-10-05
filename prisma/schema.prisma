@@ -27,6 +27,8 @@ model Contact {
   alternateNames  String[]
   tags            String[]
   notes           String?
+  avatarUrl       String?
+  avatarPublicId  String?
   lastUpdated     DateTime @default(now())
   createdAt       DateTime @default(now())
 
