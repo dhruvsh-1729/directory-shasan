@@ -90,7 +90,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       : { page: Math.max(1, Number(page) || 1), limit: Math.max(1, Number(limit) || 20) };
 
     const result = await ContactDatabaseService.searchContacts(filters, pagination);
-    const contacts = result.contacts || [];
+    const contacts = (result.contacts || []).map(contact => ({
+      ...contact,
+      phones: contact.phones ? contact.phones.map((phone: any) => ({
+        ...phone,
+        number: stripPlus91(phone.number)
+      })) : []
+    }));
 
     // Return the contacts in the same format as search API
     return res.status(200).json({
