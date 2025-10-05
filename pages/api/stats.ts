@@ -16,7 +16,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     // Apply rate limiting
-    await limiter.check(res, 20, 'STATS_TOKEN'); // 20 requests per minute
+    // await limiter.check(res, 20, 'STATS_TOKEN'); // 20 requests per minute
 
     const startTime = Date.now();
     const stats = await ContactDatabaseService.getStats();

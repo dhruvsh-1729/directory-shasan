@@ -17,7 +17,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     // Apply stricter rate limiting for imports
-    await limiter.check(res, 3, 'IMPORT_TOKEN'); // Only 3 imports per minute
+    // await limiter.check(res, 3, 'IMPORT_TOKEN'); // Only 3 imports per minute
 
     const startTime = Date.now();
     const { contacts, fileName, fileSize, options = {} }: { 
