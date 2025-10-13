@@ -389,20 +389,30 @@ export class ContactDatabaseService {
 
       // "Has" / "Missing" for address fields
       const isEmptyOrNull = (field: keyof Prisma.ContactWhereInput) => ({
-        OR: [
-          { [field]: { equals: null } } as any,
-          { [field]: { equals: '' } } as any
-        ]
+        OR: [{ [field]: { equals: null } } as any, { [field]: { equals: '' } } as any],
       });
 
-      if (filters.hasAddress === true) {
-        where.address = { not: null };
-      } else if (filters.hasAddress === false || filters.missingAddress) {
+      // NOTE: missingAddress takes precedence and also enforces parentContactId = null
+      if (filters.missingAddress) {
         where.AND = [
           ...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []),
-          isEmptyOrNull('address')
+          isEmptyOrNull('address'),
+          { parentContactId: null }, // must be a parent contact
+        ];
+      } else if (filters.hasAddress === true) {
+        // Exclude null/empty addresses (i.e., must have a non-empty address)
+        where.NOT = [
+          ...(Array.isArray(where.NOT) ? where.NOT : where.NOT ? [where.NOT] : []),
+          isEmptyOrNull('address'),
+        ];
+      } else if (filters.hasAddress === false) {
+        // Allow both parent/related; just “no address”
+        where.AND = [
+          ...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []),
+          isEmptyOrNull('address'),
         ];
       }
+
 
       if (filters.missingCity) where.AND = [ ...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []), isEmptyOrNull('city') ];
       if (filters.missingState) where.AND = [ ...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []), isEmptyOrNull('state') ];
