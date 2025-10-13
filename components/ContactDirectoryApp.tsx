@@ -29,6 +29,7 @@ import ContactCard from './ContactCard';
 import ContactDetailModal from './ContactDetailModal';
 import { ContactExtractor } from '@/utils/main';
 import { Contact } from '@/types';
+import ContactAvatar from './ContactAvatar';
 
 // --------------------------
 // Types that match database
@@ -860,6 +861,20 @@ const ContactDirectoryApp: React.FC = () => {
         </div>
       )}
 
+      {/* Stats */}
+      {dbStats && (
+        <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-4 sm:p-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4">
+            <StatCard color="from-blue-50 to-blue-100" value={dbStats.mainContacts} label="Main Contacts" />
+            <StatCard color="from-green-50 to-green-100" value={dbStats.relatedContacts} label="Related Contacts" />
+            <StatCard color="from-purple-50 to-purple-100" value={dbStats.totalPhones} label="Phone Numbers" />
+            <StatCard color="from-orange-50 to-orange-100" value={dbStats.totalEmails} label="Email Addresses" />
+            <StatCard color="from-red-50 to-red-100" value={dbStats.duplicateGroups} label="Duplicate Groups" />
+            <StatCard color="from-indigo-50 to-indigo-100" value={dbStats.recentImports} label="Recent Imports" />
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-white/20 shadow-lg">
         <div className="w-full px-4 sm:px-6 lg:px-8">
@@ -1148,20 +1163,6 @@ const ContactDirectoryApp: React.FC = () => {
           )}
         </div>
 
-        {/* Stats */}
-        {dbStats && (
-          <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-4 sm:p-6">
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4">
-              <StatCard color="from-blue-50 to-blue-100" value={dbStats.mainContacts} label="Main Contacts" />
-              <StatCard color="from-green-50 to-green-100" value={dbStats.relatedContacts} label="Related Contacts" />
-              <StatCard color="from-purple-50 to-purple-100" value={dbStats.totalPhones} label="Phone Numbers" />
-              <StatCard color="from-orange-50 to-orange-100" value={dbStats.totalEmails} label="Email Addresses" />
-              <StatCard color="from-red-50 to-red-100" value={dbStats.duplicateGroups} label="Duplicate Groups" />
-              <StatCard color="from-indigo-50 to-indigo-100" value={dbStats.recentImports} label="Recent Imports" />
-            </div>
-          </div>
-        )}
-
         {/* List */}
         {loading ? (
           viewMode === 'table'
@@ -1194,7 +1195,16 @@ const ContactDirectoryApp: React.FC = () => {
                       contact.isMainContact ? 'bg-gradient-to-r from-blue-500 to-blue-600' : 'bg-gradient-to-r from-green-500 to-green-600'
                     }`}
                   >
-                    {contact.isMainContact ? <User className="h-8 w-8" /> : <Users className="h-8 w-8" />}
+                    <div className="relative">
+                      <ContactAvatar contact={contact} size={72} />
+                      <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center ${
+                      contact.isMainContact 
+                      ? 'bg-blue-500 text-white' 
+                      : 'bg-green-500 text-white'
+                      }`}>
+                      {contact.isMainContact ? <User className="h-3 w-3" /> : <Users className="h-3 w-3" />}
+                      </div>
+                    </div>
                   </div>
                   <h3 className="text-sm font-semibold text-gray-900 mb-1 truncate">{contact.name}</h3>
                   {contact.phones.length > 0 && (
