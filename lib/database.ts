@@ -106,8 +106,8 @@ export interface DatabaseStats {
 }
 
 export class ContactDatabaseService {
-  private static CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-  private static STATS_CACHE_TTL = 10 * 60 * 1000; // 10 minutes for stats
+  private static CACHE_TTL = 1 * 30 * 1000; // 5 minutes
+  private static STATS_CACHE_TTL = 1 * 30 * 1000; // 10 minutes for stats
   
   // ------- Cache helpers -------
   private static async getFromCache<T>(key: string): Promise<T | null> {
