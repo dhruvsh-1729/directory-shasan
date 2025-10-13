@@ -381,11 +381,11 @@ export class ContactDatabaseService {
       }
 
       // Address fields
-      if (filters.city) where.city = { contains: filters.city, mode: 'insensitive' };
-      if (filters.state) where.state = { contains: filters.state, mode: 'insensitive' };
-      if (filters.suburb) where.suburb = { contains: filters.suburb, mode: 'insensitive' };
-      if (filters.country) where.country = { contains: filters.country, mode: 'insensitive' };
-      if (filters.pincode) where.pincode = { contains: filters.pincode, mode: 'insensitive' };
+      if (filters.city) where.city = { equals: filters.city };
+      if (filters.state) where.state = { equals: filters.state };
+      if (filters.suburb) where.suburb = { equals: filters.suburb };
+      if (filters.country) where.country = { equals: filters.country };
+      if (filters.pincode) where.pincode = { equals: filters.pincode };
 
       // "Has" / "Missing" for address fields
       const isEmptyOrNull = (field: keyof Prisma.ContactWhereInput) => ({
