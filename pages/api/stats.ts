@@ -34,7 +34,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     };
     
     // Set caching headers for better performance
-    res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
+    res.setHeader('Cache-Control', 's-maxage=20, stale-while-revalidate=40');
     res.setHeader('X-Query-Time', `${queryTime}ms`);
     
     return res.status(200).json(enhancedStats);

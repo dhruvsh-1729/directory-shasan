@@ -277,7 +277,7 @@ const ContactDirectoryApp: React.FC = () => {
     try {
       setOptionsLoading(true);
       const res = await plainFetch('/api/contacts/options', {
-        headers: { 'Cache-Control': 'max-age=300' },
+        headers: { 'Cache-Control': 'max-age=20' },
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: DirectoryOptions = await res.json();
@@ -405,7 +405,7 @@ const ContactDirectoryApp: React.FC = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Cache-Control': useCache ? 'max-age=120' : 'no-cache',
+          'Cache-Control': useCache ? 'max-age=20' : 'no-cache',
         },
         body: JSON.stringify(payload),
       });
@@ -428,7 +428,7 @@ const ContactDirectoryApp: React.FC = () => {
   const loadDatabaseStats = useCallback(async () => {
     try {
       const res = await plainFetch('/api/stats', {
-        headers: { 'Cache-Control': 'max-age=120' },
+        headers: { 'Cache-Control': 'max-age=20' },
       });
       if (res.ok) {
         const stats = await res.json();

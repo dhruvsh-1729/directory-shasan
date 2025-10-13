@@ -174,7 +174,7 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse, startTime: 
     res.setHeader('X-Page', result.currentPage.toString());
     res.setHeader('X-Total-Pages', result.totalPages.toString());
     res.setHeader('X-Search-Time', `${searchTime}ms`);
-    res.setHeader('Cache-Control', result.total > 0 || !filters.search ? 'public, max-age=120, stale-while-revalidate=300' : 'public, max-age=30, stale-while-revalidate=60');
+    res.setHeader('Cache-Control', result.total > 0 || !filters.search ? 'public, max-age=20, stale-while-revalidate=40' : 'public, max-age=30, stale-while-revalidate=60');
 
     return res.status(200).json({ ...result, searchTime });
   }
