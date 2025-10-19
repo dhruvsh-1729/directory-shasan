@@ -10,6 +10,7 @@ import EditContactModal from './EditContactModal';
 import ContactAvatar from './ContactAvatar';
 import { uploadAvatarFile } from '@/utils/uploadAvatar';
 import { Image as ImageIcon, Trash2 } from 'lucide-react';
+import { expandAbbreviationList } from '@/utils/helpers';
 
 interface ContactDetailModalProps {
   contact: Contact;
@@ -710,9 +711,9 @@ const ContactDetailModal: React.FC<ContactDetailModalProps> = ({
                   <h3 className="text-lg font-semibold text-gray-900">Categories</h3>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {contact.category.split(',').map((cat, index) => (
-                    <span key={index} className="inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium bg-indigo-100 text-indigo-800 border border-indigo-300">
-                      {cat.trim()}
+                  {expandAbbreviationList(contact.category).map((cat, index) => (
+                    <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 border border-indigo-200">
+                    {cat.trim()}
                     </span>
                   ))}
                 </div>

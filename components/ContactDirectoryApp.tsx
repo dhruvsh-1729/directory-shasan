@@ -30,6 +30,7 @@ import ContactDetailModal from './ContactDetailModal';
 import { ContactExtractor } from '@/utils/main';
 import { Contact } from '@/types';
 import ContactAvatar from './ContactAvatar';
+import { expandAbbreviationList } from '@/utils/helpers';
 
 // --------------------------
 // Types that match database
@@ -1207,19 +1208,18 @@ const ContactDirectoryApp: React.FC = () => {
                     </div>
                   </div>
                   <h3 className="text-sm font-semibold text-gray-900 mb-1 truncate">{contact.name}</h3>
+                  
                   {contact.phones.length > 0 && (
                     <div className="text-xs text-gray-500 mb-1 font-mono">{contact.phones[0].number}</div>
                   )}
                   {contact.emails.length > 0 && (
                     <div className="text-xs text-gray-500 truncate">{contact.emails[0].address}</div>
                   )}
-                  {contact.category && (
-                    <div className="mt-3">
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        {contact.category}
-                      </span>
-                    </div>
-                  )}
+                  {expandAbbreviationList(contact.category).map((cat, index) => (
+                    <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 border border-indigo-200">
+                    {cat.trim()}
+                    </span>
+                  ))}
                   <div className="mt-3 flex justify-center space-x-2">
                     <div className="flex items-center text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
                       <Phone className="h-3 w-3 mr-1" />

@@ -7,6 +7,7 @@ import {
   Edit3, Eye, Copy, ExternalLink, Star
 } from 'lucide-react';
 import ContactAvatar from './ContactAvatar';
+import { expandAbbreviationList } from '@/utils/helpers';
 
 interface ContactCardProps {
   contact: Contact;
@@ -97,6 +98,11 @@ const ContactCard: React.FC<ContactCardProps> = ({
         <div className="ml-3 min-w-0 flex-1">
           <div className="flex items-center">
           <h3 className="text-sm font-semibold text-gray-900 truncate mr-2">{contact.name}</h3>
+          {expandAbbreviationList(contact.category).map((cat, index) => (
+            <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 border border-indigo-200">
+            {cat.trim()}
+            </span>
+          ))}
           {!contact.isMainContact && (
             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200 flex-shrink-0">
             Related
@@ -346,7 +352,7 @@ const ContactCard: React.FC<ContactCardProps> = ({
           <div className="bg-indigo-50 rounded-lg p-3">
             <h4 className="text-sm font-semibold text-gray-700 mb-3">Category</h4>
             <div className="flex flex-wrap gap-2">
-            {contact.category.split(',').map((cat, index) => (
+            {expandAbbreviationList(contact.category).map((cat, index) => (
               <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 border border-indigo-200">
               {cat.trim()}
               </span>
