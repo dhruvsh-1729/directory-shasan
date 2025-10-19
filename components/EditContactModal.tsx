@@ -2,6 +2,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { X, Plus, Minus, Save, CheckCircle, AlertTriangle } from 'lucide-react';
 import type { Contact } from '@/types';
+import { convertCase } from '@/utils/helpers';
+import Location from './Location';
 
 type Props = {
   contact: Contact;
@@ -67,6 +69,10 @@ const EditContactModal: React.FC<Props> = ({ contact, parentContact, onCancel, o
     setForm(p => ({ ...p, tags: v.split(',').map(s => s.trim()).filter(Boolean) }));
 
   // Save
+  // Helper for CSV fields
+  const toProperCaseArray = (arr: string[] | null | undefined) =>
+    (arr ?? []).map(s => convertCase(s));
+
   const onSave = async () => {
     setSaving(true);
     setError('');
@@ -77,28 +83,26 @@ const EditContactModal: React.FC<Props> = ({ contact, parentContact, onCancel, o
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           patch: {
-            name: form.name,
+            name: convertCase(form.name),
             status: form.status ?? null,
-            address: form.address ?? null,
-            suburb: form.suburb ?? null,
-            city: form.city ?? null,
+            address: convertCase(form.address),
+            suburb: convertCase(form.suburb),
+            city: convertCase(form.city),
             pincode: form.pincode ?? null,
-            state: form.state ?? null,
-            country: form.country ?? null,
+            state: convertCase(form.state),
+            country: convertCase(form.country),
             category: form.category ?? null,
-            officeAddress: form.officeAddress ?? null,
-            address2: form.address2 ?? null,
-            duplicateGroup: form.duplicateGroup ?? null,
-            alternateNames: form.alternateNames ?? [],
-            tags: form.tags ?? [],
-            notes: form.notes ?? null,
+            officeAddress: convertCase(form.officeAddress),
+            address2: convertCase(form.address2),
+            duplicateGroup: convertCase(form.duplicateGroup),
+            alternateNames: toProperCaseArray(form.alternateNames),
+            tags: toProperCaseArray(form.tags),
+            notes: convertCase(form.notes),
             phones: form.phones,
             emails: form.emails,
             relationships: form.relationships ?? [],
           },
           applyToParent: !form.isMainContact && applyToParent ? true : false,
-          // If you want to send a *different* patch for parent, put it here.
-          // parentPatch: { address: form.address, city: form.city, state: form.state, country: form.country, pincode: form.pincode }
         })
       });
 
@@ -107,7 +111,6 @@ const EditContactModal: React.FC<Props> = ({ contact, parentContact, onCancel, o
         console.error('Save error', res.status, t);
         setError(t.message || `Failed to save (HTTP ${res.status})`);
         return;
-        // throw new Error(t.message || `HTTP ${res.status}`);
       }
 
       const data = await res.json();
@@ -223,7 +226,7 @@ const EditContactModal: React.FC<Props> = ({ contact, parentContact, onCancel, o
                     onChange={(e) => setField('suburb', e.target.value)}
                   />
                 </label>
-                <label className="block">
+                {/* <label className="block">
                   <span className="text-sm text-gray-600">City</span>
                   <input
                     className="mt-1 w-full rounded-lg border px-3 py-2"
@@ -240,14 +243,6 @@ const EditContactModal: React.FC<Props> = ({ contact, parentContact, onCancel, o
                   />
                 </label>
                 <label className="block">
-                  <span className="text-sm text-gray-600">Pincode</span>
-                  <input
-                    className="mt-1 w-full rounded-lg border px-3 py-2"
-                    value={form.pincode || ''}
-                    onChange={(e) => setField('pincode', e.target.value)}
-                  />
-                </label>
-                <label className="block">
                   <span className="text-sm text-gray-600">Country</span>
                   <input
                     className="mt-1 w-full rounded-lg border px-3 py-2"
@@ -255,6 +250,16 @@ const EditContactModal: React.FC<Props> = ({ contact, parentContact, onCancel, o
                     onChange={(e) => setField('country', e.target.value)}
                   />
                 </label>
+                <label className="block">
+                  <span className="text-sm text-gray-600">Pincode</span>
+                  <input
+                    className="mt-1 w-full rounded-lg border px-3 py-2"
+                    value={form.pincode || ''}
+                    onChange={(e) => setField('pincode', e.target.value)}
+                  />
+                </label> */}
+                <Location form={{country: form.country || "" as string, state: form.state || "" as string, city: form.city || "" as string, pincode: form.pincode as string}} setField={setField} />
+
               </div>
             </div>
           </section>
