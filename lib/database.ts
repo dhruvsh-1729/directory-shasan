@@ -34,6 +34,8 @@ export interface ContactFilters {
   category?: string;
   hasEmails?: boolean;
   hasPhones?: boolean;
+  hasCategory?: boolean;
+  noCategory?: boolean;
   createdAfter?: Date;
   createdBefore?: Date;
 
@@ -437,6 +439,9 @@ export class ContactDatabaseService {
 
       if (filters.hasPhones === true) where.phones = { some: {} };
       else if (filters.hasPhones === false) where.phones = { none: {} };
+
+      if (filters.hasCategory) where.category = { not: null };
+      else if (filters.noCategory) where.category = null;
 
       // Validation filters
       if (filters.validPhonesOnly) {

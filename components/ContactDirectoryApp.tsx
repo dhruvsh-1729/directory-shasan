@@ -57,6 +57,8 @@ interface AdvancedFilters {
   missingCountry?: boolean;
   missingSuburb?: boolean;
   missingPincode?: boolean;
+  hasCategory?: boolean;
+  noCategory?: boolean;
 
   // Identity/meta
   status?: string;
@@ -351,7 +353,7 @@ const ContactDirectoryApp: React.FC = () => {
       f.filter = selectedFilter;
 
       // Tri-state normalization: null => undefined (don’t send)
-      const tri: (keyof AdvancedFilters)[] = ['isMain', 'hasParent', 'hasAvatar', 'hasEmails', 'hasPhones'];
+      const tri: (keyof AdvancedFilters)[] = ['isMain', 'hasParent', 'hasAvatar', 'hasEmails', 'hasPhones', 'hasCategory', 'noCategory'];
       tri.forEach((k) => {
         if ((f as any)[k] === null) delete (f as any)[k];
       });
@@ -1126,6 +1128,8 @@ const ContactDirectoryApp: React.FC = () => {
                     <Toggle label="Valid Phones Only" checked={!!draftFilters.validPhonesOnly} onChange={(v) => updateDraft('validPhonesOnly', v)} />
                     <Toggle label="Valid Emails Only" checked={!!draftFilters.validEmailsOnly} onChange={(v) => updateDraft('validEmailsOnly', v)} />
                     <Toggle label="Primary Phone Only" checked={!!draftFilters.primaryPhoneOnly} onChange={(v) => updateDraft('primaryPhoneOnly', v)} />
+                    <Toggle label="Has Category" checked={!!draftFilters.hasCategory} onChange={(v) => updateDraft('hasCategory', v)} />
+                    <Toggle label="No Category" checked={!!draftFilters.noCategory} onChange={(v) => updateDraft('noCategory', v)} />
                   </div>
 
                   <div className="mt-3">

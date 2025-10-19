@@ -23,7 +23,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Extract filters from request body (same as contacts/index.ts)
       search, filter = 'all',
       city, state, suburb, country, pincode, category, status,
-      hasEmails, hasPhones, hasAddress, missingAddress,
+      hasEmails, hasPhones, hasAddress, hasCategory, noCategory, missingAddress,
       missingCity, missingState, missingCountry, missingSuburb, missingPincode,
       isMain, hasParent, hasAvatar,
       validPhonesOnly, validEmailsOnly, phoneTypes, primaryPhoneOnly, emailDomain,
@@ -54,6 +54,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       hasEmails: parseBool(hasEmails),
       hasPhones: parseBool(hasPhones),
       hasAddress: parseBool(hasAddress),
+      hasCategory: parseBool(hasCategory),
+      noCategory: parseBool(noCategory),
       missingAddress: parseBool(missingAddress),
       missingCity: parseBool(missingCity),
       missingState: parseBool(missingState),

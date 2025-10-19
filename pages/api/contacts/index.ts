@@ -60,7 +60,7 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse, startTime: n
   const {
     search, filter = 'all',
     city, state, suburb, country, pincode, category, status,
-    hasEmails, hasPhones, hasAddress, missingAddress,
+    hasEmails, hasPhones, hasAddress, hasCategory, noCategory, missingAddress,
     missingCity, missingState, missingCountry, missingSuburb, missingPincode,
     isMain, hasParent, hasAvatar,
     validPhonesOnly, validEmailsOnly, phoneTypes, primaryPhoneOnly, emailDomain,
@@ -93,6 +93,8 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse, startTime: n
     hasEmails: parseBool(hasEmails),
     hasPhones: parseBool(hasPhones),
     hasAddress: parseBool(hasAddress),
+    hasCategory: parseBool(hasCategory),
+    noCategory: parseBool(noCategory),
     missingAddress: parseBool(missingAddress),
     missingCity: parseBool(missingCity),
     missingState: parseBool(missingState),
