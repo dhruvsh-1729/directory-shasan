@@ -14,6 +14,7 @@ import {
   RefreshCw,
   Database,
   X,
+  Plus,
   AlertTriangle,
   CheckCircle,
   Loader2,
@@ -27,6 +28,7 @@ import {
 } from 'lucide-react';
 import ContactCard from './ContactCard';
 import ContactDetailModal from './ContactDetailModal';
+import AddContactModal from './AddContactModal';
 import { ContactExtractor } from '@/utils/main';
 import { Contact } from '@/types';
 import ContactAvatar from './ContactAvatar';
@@ -176,6 +178,7 @@ const ContactDirectoryApp: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+  const [showCreateContactModal, setShowCreateContactModal] = useState(false);
 
   const [uploadStatus, setUploadStatus] =
     useState<'idle' | 'processing' | 'success' | 'error'>('idle');
@@ -930,6 +933,15 @@ const ContactDirectoryApp: React.FC = () => {
                 <Download className="h-5 w-5" />
               </button>
 
+              <button
+                onClick={() => setShowCreateContactModal(true)}
+                className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-sky-500 text-white rounded-xl hover:from-emerald-600 hover:to-sky-600 transition-all flex items-center shadow-lg disabled:opacity-60"
+                disabled={exportLoadingBool}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Contact
+              </button>
+
               <label className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2.5 rounded-xl cursor-pointer hover:from-blue-700 hover:to-indigo-700 transition-all flex items-center shadow-lg disabled:opacity-50">
                 <Upload className="h-4 w-4 mr-2" />
                 Upload Excel
@@ -1385,6 +1397,18 @@ const ContactDirectoryApp: React.FC = () => {
           onClose={() => setSelectedContact(null)}
           allContacts={contacts}
           onContactSaved={handleContactSaved}
+        />
+      )}
+
+      {showCreateContactModal && (
+        <AddContactModal
+          onCancel={() => setShowCreateContactModal(false)}
+          onCreated={async ({ contact, parentContact }) => {
+            handleContactSaved(contact, parentContact || null);
+            setShowCreateContactModal(false);
+            await loadContacts(false);
+            await loadDatabaseStats();
+          }}
         />
       )}
 

@@ -320,24 +320,74 @@ export class ContactDatabaseService {
 
       const where: Prisma.ContactWhereInput = {};
 
-      // Basic quick search (name/phones/emails/city/state/category/status/tags/alternateNames/notes)
+      // Enhanced search (handles phone normalization, spaces, country codes, and flexible matching for all fields)
       if (filters.search) {
-        const searchTerm = filters.search.toLowerCase().trim();
-        const digits = searchTerm.replace(/\D/g, '');
+        const searchTerm = filters.search.trim();
+        const searchTermLower = searchTerm.toLowerCase();
+
+        // For phone: remove spaces, dashes, parentheses, and leading country code (+91, 91, 0)
+        const normalizePhone = (str: string) =>
+          str.replace(/[\s\-\(\)]/g, '').replace(/^(\+91|91|0)/, '');
+
+        const searchTermNoSpaces = searchTerm.replace(/\s+/g, '');
+        const searchTermDigits = searchTerm.replace(/\D/g, '');
+        const searchTermNormalizedPhone = normalizePhone(searchTerm);
+
+        // For suburb: also try to match ignoring case and ignoring parenthesis content
+        const suburbVariants = [
+          searchTerm,
+          searchTermLower,
+          searchTerm.replace(/\s*\(.*?\)\s*/g, '').trim(), // Remove parenthesis content
+          searchTermLower.replace(/\s*\(.*?\)\s*/g, '').trim(),
+        ].filter((v, i, arr) => arr.indexOf(v) === i && v.length > 0);
+
         where.OR = [
-          { name: { contains: searchTerm, mode: 'insensitive' } },
-          { phones: { some: { number: { contains: digits || searchTerm } } } },
-          { emails: { some: { address: { contains: searchTerm, mode: 'insensitive' } } } },
-          { city: { contains: searchTerm, mode: 'insensitive' } },
-          { state: { contains: searchTerm, mode: 'insensitive' } },
-          { country: { contains: searchTerm, mode: 'insensitive' } },
-          { suburb: { contains: searchTerm, mode: 'insensitive' } },
-          { pincode: { contains: searchTerm, mode: 'insensitive' } },
-          { category: { contains: searchTerm, mode: 'insensitive' } },
-          { status: { contains: searchTerm, mode: 'insensitive' } },
+          // Name
+          { name: { contains: searchTerm, mode: Prisma.QueryMode.insensitive } },
+          { name: { equals: searchTerm } },
+          // Phones (match as stored, as digits, as normalized, as no spaces, and as substring)
+          { phones: { some: { number: { contains: searchTerm } } } },
+          ...(searchTermNoSpaces !== searchTerm
+        ? [{ phones: { some: { number: { contains: searchTermNoSpaces } } } }] : []),
+          ...(searchTermDigits.length >= 5
+        ? [{ phones: { some: { number: { contains: searchTermDigits } } } }] : []),
+          ...(searchTermNormalizedPhone !== searchTerm
+        ? [{ phones: { some: { number: { contains: searchTermNormalizedPhone } } } }] : []),
+          // Emails (as stored, lowercased, trimmed)
+          { emails: { some: { address: { contains: searchTerm, mode: Prisma.QueryMode.insensitive } } } },
+          ...(searchTermLower !== searchTerm
+        ? [{ emails: { some: { address: { contains: searchTermLower, mode: Prisma.QueryMode.insensitive } } } }] : []),
+          // City, State, Country, Category, Status, Pincode (as stored and lowercased)
+          { city: { contains: searchTerm, mode: Prisma.QueryMode.insensitive } },
+          ...(searchTermLower !== searchTerm
+        ? [{ city: { contains: searchTermLower, mode: Prisma.QueryMode.insensitive } }] : []),
+          { state: { contains: searchTerm, mode: Prisma.QueryMode.insensitive } },
+          ...(searchTermLower !== searchTerm
+        ? [{ state: { contains: searchTermLower, mode: Prisma.QueryMode.insensitive } }] : []),
+          { country: { contains: searchTerm, mode: Prisma.QueryMode.insensitive } },
+          ...(searchTermLower !== searchTerm
+        ? [{ country: { contains: searchTermLower, mode: Prisma.QueryMode.insensitive } }] : []),
+          { category: { contains: searchTerm, mode: Prisma.QueryMode.insensitive } },
+          ...(searchTermLower !== searchTerm
+        ? [{ category: { contains: searchTermLower, mode: Prisma.QueryMode.insensitive } }] : []),
+          { status: { contains: searchTerm, mode: Prisma.QueryMode.insensitive } },
+          ...(searchTermLower !== searchTerm
+        ? [{ status: { contains: searchTermLower, mode: Prisma.QueryMode.insensitive } }] : []),
+          { pincode: { contains: searchTerm, mode: Prisma.QueryMode.insensitive } },
+          ...(searchTermLower !== searchTerm
+        ? [{ pincode: { contains: searchTermLower, mode: Prisma.QueryMode.insensitive } }] : []),
+          // Suburb (try all variants)
+          ...suburbVariants.map(variant => ({
+        suburb: { contains: variant, mode: Prisma.QueryMode.insensitive }
+          })),
+          // Tags, alternateNames, notes
           { tags: { has: searchTerm } },
+          ...(searchTermLower !== searchTerm ? [{ tags: { has: searchTermLower } }] : []),
           { alternateNames: { has: searchTerm } },
-          { notes: { contains: searchTerm, mode: 'insensitive' } },
+          ...(searchTermLower !== searchTerm ? [{ alternateNames: { has: searchTermLower } }] : []),
+          { notes: { contains: searchTerm, mode: Prisma.QueryMode.insensitive } },
+          ...(searchTermLower !== searchTerm
+        ? [{ notes: { contains: searchTermLower, mode: Prisma.QueryMode.insensitive } }] : []),
         ];
       }
 
@@ -478,7 +528,7 @@ export class ContactDatabaseService {
           ...(where.emails as any || {}),
           some: {
             ...(where.emails && 'some' in (where.emails as any) ? (where.emails as any).some : {}),
-            address: { endsWith: `@${domain}`, mode: 'insensitive' }
+            address: { endsWith: `@${domain}`, mode: Prisma.QueryMode.insensitive }
           }
         } as any;
       }
@@ -493,10 +543,10 @@ export class ContactDatabaseService {
       if (filters.categoryIn && filters.categoryIn.length > 0) {
         where.OR = [
           ...(where.OR || []),
-          ...filters.categoryIn.map(cat => ({ category: { contains: cat, mode: 'insensitive' as const } }))
+          ...filters.categoryIn.map(cat => ({ category: { contains: cat, mode: Prisma.QueryMode.insensitive } }))
         ];
       } else if (filters.category) {
-        where.category = { contains: filters.category, mode: 'insensitive' };
+        where.category = { contains: filters.category, mode: Prisma.QueryMode.insensitive };
       }
 
       // Dates
@@ -706,6 +756,26 @@ export class ContactDatabaseService {
         }
       }
 
+      const parentContactId = contactData.parentContactId ? String(contactData.parentContactId).trim() : '';
+      let parentContact: PrismaContact | null = null;
+      if (parentContactId) {
+        parentContact = await prisma.contact.findUnique({ where: { id: parentContactId } });
+        if (!parentContact) {
+          throw new Error('Parent contact not found');
+        }
+        if (parentContact.parentContactId) {
+          throw new Error('Selected parent contact is not a top-level contact');
+        }
+        if (!parentContact.isMainContact) {
+          throw new Error('Selected parent contact is not marked as a main contact');
+        }
+        contactData.parentContactId = parentContactId;
+        contactData.isMainContact = false;
+      } else {
+        contactData.parentContactId = undefined;
+        contactData.isMainContact = true;
+      }
+
       const created = await prisma.contact.create({
         data: {
           name: contactData.name.trim(),
@@ -759,6 +829,9 @@ export class ContactDatabaseService {
       });
       await this.invalidateCache('contacts:');
       await this.invalidateCache('stats');
+      if (parentContactId) {
+        await this.invalidateCache(`contact:${parentContactId}`);
+      }
       return this.mapPrismaContactToContact(withRels!);
     } catch (error) {
       console.error('Create contact error:', error);

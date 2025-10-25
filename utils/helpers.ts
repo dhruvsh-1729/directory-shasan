@@ -12,12 +12,13 @@ const ABBREVIATIONS: Record<string, string> = {
     SP: 'Sansari Parivarjan',
     GM: 'Gruh Mandir',
     AS: 'Anya Samuday',
-    VIP: 'Very Important Person'
+    VIP: 'Very Important Person',
+    MM: 'Mangal Murti',
 };
 
 export const expandAbbreviations = (str: string | undefined) => {
     if (!str) return '';
-    return str.replace(/\b(GM|SP|AS|G|VIP)\b/g, match => ABBREVIATIONS[match] || match);
+    return str.replace(/\b(GM|SP|AS|G|VIP|MM)\b/g, match => ABBREVIATIONS[match] || match);
 };
 
 export const expandAbbreviationList = (str: string | undefined): string[] => {

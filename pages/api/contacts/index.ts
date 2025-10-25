@@ -3,6 +3,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { ContactDatabaseService, ContactFilters, PaginationOptions } from '@/lib/database';
 import { Contact } from '@/types';
 import rateLimit from '@/lib/rateLimit';
+import { ValidationUtils } from '@/lib/validation';
 
 export interface ContactSearchResult {
   contacts: any[];
@@ -217,17 +218,6 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse, startTime: 
       },
       message: `Successfully created ${result.count} out of ${contacts.length} contacts`
     });
-  }
-
-  // SINGLE CREATE
-  if (req.body.name && typeof req.body.name === 'string' && req.body.name.trim().length > 0) {
-    const contactData = { ...req.body, name: req.body.name.trim() } as Omit<Contact, 'id' | 'createdAt' | 'lastUpdated'>;
-    contactData.phones?.forEach((p, i) => { if (!p.number || p.number.trim().length === 0) throw new Error(`Phone ${i + 1}: Missing phone number`); });
-    contactData.emails?.forEach((e, i) => { if (!e.address || !e.address.includes('@')) throw new Error(`Email ${i + 1}: Invalid email format`); });
-
-    const contact = await ContactDatabaseService.createContact(contactData);
-    const processingTime = Date.now() - startTime;
-    return res.status(201).json({ ...contact, metadata: { processingTime: `${processingTime}ms`, createdAt: new Date().toISOString() } });
   }
 
   return res.status(400).json({ 
